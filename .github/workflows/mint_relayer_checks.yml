@@ -1,4 +1,4 @@
-name: test
+name: mint_relayer_checks
 
 on: workflow_dispatch
 
