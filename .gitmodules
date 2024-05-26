@@ -4,3 +4,6 @@
 [submodule "mint_relayer/lib/openzeppelin-contracts"]
 	path = mint_relayer/lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "mint_relayer/lib/solmate"]
+	path = mint_relayer/lib/solmate
+	url = https://github.com/transmissions11/solmate
