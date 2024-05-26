@@ -1,6 +1,6 @@
-[submodule "lib/forge-std"]
-	path = lib/forge-std
+[submodule "mint_relayer/lib/forge-std"]
+	path = mint_relayer/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
-[submodule "lib/openzeppelin-contracts"]
-	path = lib/openzeppelin-contracts
+[submodule "mint_relayer/lib/openzeppelin-contracts"]
+	path = mint_relayer/lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
