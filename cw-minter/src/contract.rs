@@ -13,10 +13,14 @@ use cw_ownable::{assert_owner, get_ownership, initialize_owner};
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
-    _info: MessageInfo,
+    info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<AdminResp, ContractError> {
-    let admin = deps.api.addr_validate(&msg.admin)?;
+    let admin = if let Some(admin) = msg.admin {
+        deps.api.addr_validate(&admin)?
+    } else {
+        info.sender
+    };
     initialize_owner(deps.storage, deps.api, Some(admin.as_str()))?;
     Ok(AdminResp { admin })
 }

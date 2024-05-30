@@ -4,7 +4,7 @@ use cw_ownable::{cw_ownable_execute, cw_ownable_query};
 
 #[cw_serde]
 pub struct InstantiateMsg {
-    pub admin: String,
+    pub admin: Option<String>,
 }
 
 #[cw_ownable_execute]
