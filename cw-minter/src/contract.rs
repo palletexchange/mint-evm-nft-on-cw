@@ -6,9 +6,9 @@ use crate::state::{
 use crate::SUPPORTED_DENOM;
 use cosmwasm_std::{
     coin, entry_point, to_json_binary, wasm_execute, BankMsg, Binary, CosmosMsg, Deps, DepsMut,
-    Env, MessageInfo, Response,
+    Empty, Env, MessageInfo, Response,
 };
-use cw721_base::ExecuteMsg as Cw721ExecuteMsg;
+use cw721::Cw721ExecuteMsg;
 use cw_ownable::{assert_owner, get_ownership, initialize_owner};
 
 #[entry_point]
@@ -110,6 +110,8 @@ pub fn execute_mint(
     // send funds to relayer
     let mint_fund_amount = if info.funds.len() == 1 && info.funds[0].denom == SUPPORTED_DENOM {
         info.funds[0].amount.u128()
+    } else if info.funds.len() == 0 {
+        0
     } else {
         return Err(ContractError::InvalidFundsReceived {});
     };
@@ -128,7 +130,7 @@ pub fn execute_mint(
     let mint_attempt = MintAttempt::new(deps, &recipient, quantity, mint_fund_amount)?;
     let mint_approval_msg = wasm_execute(
         &relayer_pointer_addr,
-        &Cw721ExecuteMsg::<(), ()>::Approve {
+        &Cw721ExecuteMsg::Approve {
             spender: mint_attempt.minter.to_string(),
             token_id: mint_attempt.id.to_string(),
             expires: Some(cw721::Expiration::Never {}),
