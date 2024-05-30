@@ -107,11 +107,17 @@ pub fn execute_mint(
     } else {
         return Err(ContractError::InvalidFundsReceived {});
     };
-    let send_msg: CosmosMsg = BankMsg::Send {
-        to_address: relayer_associated_addr.to_string(),
-        amount: vec![coin(mint_fund_amount, SUPPORTED_DENOM)],
-    }
-    .into();
+    let send_msg: Option<CosmosMsg> = if mint_fund_amount > 0 {
+        Some(
+            BankMsg::Send {
+                to_address: relayer_associated_addr.to_string(),
+                amount: vec![coin(mint_fund_amount, SUPPORTED_DENOM)],
+            }
+            .into(),
+        )
+    } else {
+        None
+    };
 
     let mint_attempt = MintAttempt::new(deps, recipient.to_string(), quantity, mint_fund_amount)?;
     let mint_approval_msg = wasm_execute(
@@ -125,14 +131,17 @@ pub fn execute_mint(
     )?
     .into();
 
-    Ok(Response::new()
-        .add_messages(vec![send_msg, mint_approval_msg])
-        .add_attributes(vec![
-            ("action", "mint"),
-            ("recipient", &recipient),
-            ("quantity", &quantity.to_string()),
-            ("funds", &mint_fund_amount.to_string()),
-        ]))
+    let mut msgs = vec![mint_approval_msg];
+    if let Some(send_msg) = send_msg {
+        msgs.push(send_msg);
+    }
+
+    Ok(Response::new().add_messages(msgs).add_attributes(vec![
+        ("action", "mint"),
+        ("recipient", &recipient),
+        ("quantity", &quantity.to_string()),
+        ("funds", &mint_fund_amount.to_string()),
+    ]))
 }
 
 #[entry_point]
