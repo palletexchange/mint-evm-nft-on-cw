@@ -39,8 +39,3 @@ pub struct RelayerResp {
     pub associated_address: Option<Addr>,
     pub pointer_address: Option<Addr>,
 }
-
-#[cw_serde]
-pub struct AdminResp {
-    pub admin: Addr,
-}

@@ -1,5 +1,5 @@
 use crate::error::ContractError;
-use crate::msg::{AdminResp, ExecuteMsg, InstantiateMsg, QueryMsg, RelayerResp};
+use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, RelayerResp};
 use crate::state::{MintAttempt, MINT_ATTEMPTS, RELAYER_ASSOCIATED_ADDR, RELAYER_POINTER_ADDR};
 use crate::SUPPORTED_DENOM;
 use cosmwasm_std::{
@@ -15,14 +15,17 @@ pub fn instantiate(
     _env: Env,
     info: MessageInfo,
     msg: InstantiateMsg,
-) -> Result<AdminResp, ContractError> {
+) -> Result<Response, ContractError> {
     let admin = if let Some(admin) = msg.admin {
         deps.api.addr_validate(&admin)?
     } else {
         info.sender
     };
     initialize_owner(deps.storage, deps.api, Some(admin.as_str()))?;
-    Ok(AdminResp { admin })
+    Ok(Response::new().add_attributes(vec![
+        ("action", "instantiate"),
+        ("admin", &admin.to_string()),
+    ]))
 }
 
 #[entry_point]
