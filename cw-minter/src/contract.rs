@@ -1,14 +1,13 @@
 use crate::error::ContractError;
 use crate::msg::{AdminResp, ExecuteMsg, InstantiateMsg, QueryMsg, RelayerResp};
 use crate::state::{MintAttempt, MINT_ATTEMPTS, RELAYER_ASSOCIATED_ADDR, RELAYER_POINTER_ADDR};
+use crate::SUPPORTED_DENOM;
 use cosmwasm_std::{
-    coin, entry_point, to_json_binary, wasm_execute, BankMsg, Binary, Deps, DepsMut, Env,
-    MessageInfo, Response,
+    coin, entry_point, to_json_binary, wasm_execute, BankMsg, Binary, CosmosMsg, Deps, DepsMut,
+    Env, MessageInfo, Response,
 };
 use cw721_base::ExecuteMsg as Cw721ExecuteMsg;
 use cw_ownable::{assert_owner, get_ownership, initialize_owner};
-
-const SUPPORTED_DENOM: &str = "usei";
 
 #[entry_point]
 pub fn instantiate(
@@ -62,9 +61,15 @@ pub fn execute_set_relayer(
 
     let pointer_addr = deps.api.addr_validate(&pointer_address)?;
     let associated_addr = deps.api.addr_validate(&associated_address)?;
+
     RELAYER_POINTER_ADDR.save(deps.storage, &pointer_addr)?;
     RELAYER_ASSOCIATED_ADDR.save(deps.storage, &associated_addr)?;
-    Ok(Response::new())
+
+    Ok(Response::new().add_attributes(vec![
+        ("action", "set_relayer"),
+        ("pointer_address", &pointer_address),
+        ("associated_address", &associated_address),
+    ]))
 }
 
 pub fn execute_mint(
@@ -77,24 +82,27 @@ pub fn execute_mint(
         return Err(ContractError::InvalidMintQuantity { quantity });
     }
 
-    let relayer_associated_addr = RELAYER_ASSOCIATED_ADDR.load(deps.storage)?;
-    let relayer_pointer_addr = RELAYER_POINTER_ADDR.load(deps.storage)?;
-    // if relayer_associated_addr || relayer_pointer_addr {
-    //     return Err(ContractError::RelayerNotConfigured {});
-    // }
+    let relayer_associated_addr = RELAYER_ASSOCIATED_ADDR
+        .load(deps.storage)
+        .map_err(|_| ContractError::RelayerNotConfigured {})?;
+    let relayer_pointer_addr = RELAYER_POINTER_ADDR
+        .load(deps.storage)
+        .map_err(|_| ContractError::RelayerNotConfigured {})?;
 
     // send funds to relayer
-    let mut mint_fund_amount = 0u128;
-    if info.funds.len() == 1 && info.funds[0].denom == SUPPORTED_DENOM {
-        mint_fund_amount = info.funds[0].amount.into();
-        BankMsg::Send {
-            to_address: relayer_associated_addr.to_string(),
-            amount: vec![coin(mint_fund_amount, SUPPORTED_DENOM)],
-        };
+    let mint_fund_amount = if info.funds.len() == 1 && info.funds[0].denom == SUPPORTED_DENOM {
+        info.funds[0].amount.u128()
+    } else {
+        return Err(ContractError::InvalidFundsReceived {});
+    };
+    let send_msg: CosmosMsg = BankMsg::Send {
+        to_address: relayer_associated_addr.to_string(),
+        amount: vec![coin(mint_fund_amount, SUPPORTED_DENOM)],
     }
+    .into();
 
     let mint_attempt = MintAttempt::new(deps, recipient.to_string(), quantity, mint_fund_amount)?;
-    wasm_execute(
+    let mint_approval_msg = wasm_execute(
         &relayer_pointer_addr,
         &Cw721ExecuteMsg::<(), ()>::Approve {
             spender: mint_attempt.minter.to_string(),
@@ -102,8 +110,17 @@ pub fn execute_mint(
             expires: Some(cw721::Expiration::Never {}),
         },
         vec![],
-    )?;
-    Ok(Response::new())
+    )?
+    .into();
+
+    Ok(Response::new()
+        .add_messages(vec![send_msg, mint_approval_msg])
+        .add_attributes(vec![
+            ("action", "mint"),
+            ("recipient", &recipient),
+            ("quantity", &quantity.to_string()),
+            ("funds", &mint_fund_amount.to_string()),
+        ]))
 }
 
 #[entry_point]

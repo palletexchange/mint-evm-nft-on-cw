@@ -1,3 +1,4 @@
+use crate::SUPPORTED_DENOM;
 use cosmwasm_std::{Addr, StdError};
 use cw_ownable::OwnershipError;
 use thiserror::Error;
@@ -13,11 +14,8 @@ pub enum ContractError {
     #[error("Unauthorized: {sender} is not authorized")]
     Unauthorized { sender: Addr },
 
-    #[error("Too many denoms received, must only send 1")]
-    TooManyDenomsReceived {},
-
-    #[error("Invalid denom received.")]
-    InvalidDenom {},
+    #[error("Must send funds in {SUPPORTED_DENOM}.")]
+    InvalidFundsReceived {},
 
     #[error("Invalid mint quantity: {quantity}.")]
     InvalidMintQuantity { quantity: u32 },
