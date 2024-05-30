@@ -31,7 +31,7 @@ pub enum QueryMsg {
     #[returns(RelayerResp)]
     Relayer {},
     #[returns(crate::state::MintAttempt)]
-    GetMintAttempt { attempt_id: u32 },
+    MintAttempt { attempt_id: u32 },
 }
 
 #[cw_serde]

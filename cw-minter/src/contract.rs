@@ -134,7 +134,7 @@ pub fn execute_mint(
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
         QueryMsg::Relayer {} => Ok(to_json_binary(&query_relayer(deps)?)?),
-        QueryMsg::GetMintAttempt { attempt_id } => Ok(to_json_binary(
+        QueryMsg::MintAttempt { attempt_id } => Ok(to_json_binary(
             &MINT_ATTEMPTS.load(deps.storage, attempt_id)?,
         )?),
         QueryMsg::Ownership {} => Ok(to_json_binary(&get_ownership(deps.storage)?)?),
