@@ -7,17 +7,6 @@ pub struct InstantiateMsg {
     pub admin: String,
 }
 
-#[cw_serde]
-pub struct RelayerResp {
-    pub associated_address: String,
-    pub pointer_address: String,
-}
-
-#[cw_serde]
-pub struct AdminResp {
-    pub admin: Addr,
-}
-
 #[cw_ownable_execute]
 #[cw_serde]
 pub enum ExecuteMsg {
@@ -43,4 +32,15 @@ pub enum QueryMsg {
     Relayer {},
     #[returns(crate::state::MintAttempt)]
     GetMintAttempt { attempt_id: u32 },
+}
+
+#[cw_serde]
+pub struct RelayerResp {
+    pub associated_address: Option<Addr>,
+    pub pointer_address: Option<Addr>,
+}
+
+#[cw_serde]
+pub struct AdminResp {
+    pub admin: Addr,
 }

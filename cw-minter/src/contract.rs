@@ -136,8 +136,8 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
 
 pub fn query_relayer(deps: Deps) -> Result<RelayerResp, ContractError> {
     let relayer = RelayerResp {
-        pointer_address: RELAYER_POINTER_ADDR.load(deps.storage)?.to_string(),
-        associated_address: RELAYER_ASSOCIATED_ADDR.load(deps.storage)?.to_string(),
+        pointer_address: RELAYER_POINTER_ADDR.load(deps.storage).ok(),
+        associated_address: RELAYER_ASSOCIATED_ADDR.load(deps.storage).ok(),
     };
     Ok(relayer)
 }
