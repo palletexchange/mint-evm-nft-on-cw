@@ -1,10 +1,12 @@
 use crate::error::ContractError;
 use crate::msg::{AdminResp, ExecuteMsg, InstantiateMsg, QueryMsg, RelayerResp};
-use crate::state::{ADMIN, MintAttempt, MINT_ATTEMPTS, RELAYER_ASSOCIATED_ADDR, RELAYER_POINTER_ADDR};
+use crate::state::{MintAttempt, MINT_ATTEMPTS, RELAYER_ASSOCIATED_ADDR, RELAYER_POINTER_ADDR};
 use cosmwasm_std::{
-    coin, entry_point, to_json_binary, wasm_execute, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response,
+    coin, entry_point, to_json_binary, wasm_execute, BankMsg, Binary, Deps, DepsMut, Env,
+    MessageInfo, Response,
 };
 use cw721_base::ExecuteMsg as Cw721ExecuteMsg;
+use cw_ownable::{get_ownership, initialize_owner};
 
 const SUPPORTED_DENOM: &str = "usei";
 
@@ -16,42 +18,38 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> Result<AdminResp, ContractError> {
     let admin = deps.api.addr_validate(&msg.admin)?;
-    ADMIN.save(deps.storage, &admin)?;
+    initialize_owner(deps.storage, deps.api, Some(admin.as_str()))?;
     Ok(AdminResp { admin })
 }
 
 #[entry_point]
 pub fn execute(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::UpdateAdmin { admin } => execute_update_admin(deps, info, admin),
         ExecuteMsg::SetRelayer {
             pointer_address,
             associated_address,
         } => execute_set_relayer(deps, info, pointer_address, associated_address),
-        ExecuteMsg::Mint { recipient, quantity } => execute_mint(deps, info, recipient, quantity),
+        ExecuteMsg::Mint {
+            recipient,
+            quantity,
+        } => execute_mint(deps, info, recipient, quantity),
+        ExecuteMsg::UpdateOwnership(action) => update_ownership(deps, env, info, action),
     }
 }
 
-pub fn execute_update_admin(
+pub fn update_ownership(
     deps: DepsMut,
+    env: Env,
     info: MessageInfo,
-    new_admin: String,
+    action: cw_ownable::Action,
 ) -> Result<Response, ContractError> {
-    let current_admin = ADMIN.load(deps.storage)?;
-    if current_admin != info.sender {
-        return Err(ContractError::Unauthorized {
-            sender: info.sender,
-        });
-    }
-
-    let next_admin = deps.api.addr_validate(&new_admin)?;
-    ADMIN.save(deps.storage, &next_admin)?;
-    Ok(Response::new())
+    let ownership = cw_ownable::update_ownership(deps, &env.block, &info.sender, action)?;
+    Ok(Response::new().add_attributes(ownership.into_attributes()))
 }
 
 pub fn execute_set_relayer(
@@ -71,7 +69,7 @@ pub fn execute_mint(
     deps: DepsMut,
     info: MessageInfo,
     recipient: String,
-    quantity: u32
+    quantity: u32,
 ) -> Result<Response, ContractError> {
     if quantity < 1u32 {
         return Err(ContractError::InvalidMintQuantity { quantity });
@@ -109,15 +107,12 @@ pub fn execute_mint(
 #[entry_point]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
-        QueryMsg::Admin {} => Ok(to_json_binary(&query_admin(deps)?)?),
         QueryMsg::Relayer {} => Ok(to_json_binary(&query_relayer(deps)?)?),
-        QueryMsg::GetMintAttempt { attempt_id } => Ok(to_json_binary(&MINT_ATTEMPTS.load(deps.storage, attempt_id)?)?),
+        QueryMsg::GetMintAttempt { attempt_id } => Ok(to_json_binary(
+            &MINT_ATTEMPTS.load(deps.storage, attempt_id)?,
+        )?),
+        QueryMsg::Ownership {} => Ok(to_json_binary(&get_ownership(deps.storage)?)?),
     }
-}
-
-pub fn query_admin(deps: Deps) -> Result<AdminResp, ContractError> {
-    let admin = ADMIN.load(deps.storage)?;
-    Ok(AdminResp { admin })
 }
 
 pub fn query_relayer(deps: Deps) -> Result<RelayerResp, ContractError> {

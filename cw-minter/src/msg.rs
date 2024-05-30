@@ -1,26 +1,26 @@
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Addr;
-use serde::{Deserialize, Serialize};
+use cw_ownable::{cw_ownable_execute, cw_ownable_query};
 
-#[derive(Serialize, Deserialize)]
+#[cw_serde]
 pub struct InstantiateMsg {
     pub admin: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[cw_serde]
 pub struct RelayerResp {
     pub associated_address: String,
     pub pointer_address: String,
 }
 
-
-#[derive(Serialize, Deserialize)]
-pub struct AdminResp  {
+#[cw_serde]
+pub struct AdminResp {
     pub admin: Addr,
 }
 
-#[derive(Serialize, Deserialize)]
+#[cw_ownable_execute]
+#[cw_serde]
 pub enum ExecuteMsg {
-    UpdateAdmin { admin: String },
     SetRelayer {
         // MintRelayer's CW pointer contract address
         pointer_address: String,
@@ -35,11 +35,12 @@ pub enum ExecuteMsg {
     },
 }
 
-#[derive(Serialize, Deserialize)]
+#[cw_ownable_query]
+#[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
-    Admin {},
+    #[returns(RelayerResp)]
     Relayer {},
-    GetMintAttempt {
-        attempt_id: u32,
-    },
+    #[returns(crate::state::MintAttempt)]
+    GetMintAttempt { attempt_id: u32 },
 }
