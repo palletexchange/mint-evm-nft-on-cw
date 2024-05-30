@@ -1,6 +1,8 @@
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, RelayerResp};
-use crate::state::{MintAttempt, MINT_ATTEMPTS, RELAYER_ASSOCIATED_ADDR, RELAYER_POINTER_ADDR};
+use crate::state::{
+    MintAttempt, MINT_ATTEMPTS, NUM_MINTS_ATTEMPTED, RELAYER_ASSOCIATED_ADDR, RELAYER_POINTER_ADDR,
+};
 use crate::SUPPORTED_DENOM;
 use cosmwasm_std::{
     coin, entry_point, to_json_binary, wasm_execute, BankMsg, Binary, CosmosMsg, Deps, DepsMut,
@@ -22,6 +24,9 @@ pub fn instantiate(
         info.sender
     };
     initialize_owner(deps.storage, deps.api, Some(admin.as_str()))?;
+
+    NUM_MINTS_ATTEMPTED.save(deps.storage, &0u32)?;
+
     Ok(Response::new().add_attributes(vec![
         ("action", "instantiate"),
         ("admin", &admin.to_string()),

@@ -18,8 +18,8 @@ impl MintAttempt {
         quantity: u32,
         funds: u128,
     ) -> Result<Self, ContractError> {
-        let _ = NUM_MINTS_ATTEMPTED.update(deps.storage, |n| -> StdResult<_> { Ok(n + 1) })?;
-        let mint_attempt_id = NUM_MINTS_ATTEMPTED.load(deps.storage)?;
+        let mint_attempt_id =
+            NUM_MINTS_ATTEMPTED.update(deps.storage, |n| -> StdResult<_> { Ok(n + 1) })?;
         let mint_attempt = Self {
             id: mint_attempt_id,
             minter: deps.api.addr_validate(&minter)?,
