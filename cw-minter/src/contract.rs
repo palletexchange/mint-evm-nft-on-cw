@@ -6,7 +6,7 @@ use cosmwasm_std::{
     MessageInfo, Response,
 };
 use cw721_base::ExecuteMsg as Cw721ExecuteMsg;
-use cw_ownable::{get_ownership, initialize_owner};
+use cw_ownable::{assert_owner, get_ownership, initialize_owner};
 
 const SUPPORTED_DENOM: &str = "usei";
 
@@ -54,10 +54,12 @@ pub fn update_ownership(
 
 pub fn execute_set_relayer(
     deps: DepsMut,
-    _info: MessageInfo,
+    info: MessageInfo,
     pointer_address: String,
     associated_address: String,
 ) -> Result<Response, ContractError> {
+    assert_owner(deps.storage, &info.sender)?;
+
     let pointer_addr = deps.api.addr_validate(&pointer_address)?;
     let associated_addr = deps.api.addr_validate(&associated_address)?;
     RELAYER_POINTER_ADDR.save(deps.storage, &pointer_addr)?;
