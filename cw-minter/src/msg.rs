@@ -18,7 +18,7 @@ pub enum ExecuteMsg {
     },
     Mint {
         // The NFT minter
-        recipient: String,
+        recipient: Option<String>,
         // Number of tokens to mint
         quantity: u32,
     },

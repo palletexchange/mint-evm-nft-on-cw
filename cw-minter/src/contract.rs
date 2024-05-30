@@ -87,12 +87,18 @@ pub fn execute_set_relayer(
 pub fn execute_mint(
     deps: DepsMut,
     info: MessageInfo,
-    recipient: String,
+    recipient: Option<String>,
     quantity: u32,
 ) -> Result<Response, ContractError> {
     if quantity < 1u32 {
         return Err(ContractError::InvalidMintQuantity { quantity });
     }
+
+    let recipient = if let Some(recipient) = recipient {
+        deps.api.addr_validate(&recipient)?
+    } else {
+        info.sender
+    };
 
     let relayer_associated_addr = RELAYER_ASSOCIATED_ADDR
         .load(deps.storage)
@@ -119,7 +125,7 @@ pub fn execute_mint(
         None
     };
 
-    let mint_attempt = MintAttempt::new(deps, recipient.to_string(), quantity, mint_fund_amount)?;
+    let mint_attempt = MintAttempt::new(deps, &recipient, quantity, mint_fund_amount)?;
     let mint_approval_msg = wasm_execute(
         &relayer_pointer_addr,
         &Cw721ExecuteMsg::<(), ()>::Approve {
@@ -138,7 +144,7 @@ pub fn execute_mint(
 
     Ok(Response::new().add_messages(msgs).add_attributes(vec![
         ("action", "mint"),
-        ("recipient", &recipient),
+        ("recipient", recipient.as_str()),
         ("quantity", &quantity.to_string()),
         ("funds", &mint_fund_amount.to_string()),
     ]))

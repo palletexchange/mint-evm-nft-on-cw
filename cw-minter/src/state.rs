@@ -14,7 +14,7 @@ pub struct MintAttempt {
 impl MintAttempt {
     pub fn new(
         deps: DepsMut,
-        minter: String,
+        minter: &Addr,
         quantity: u32,
         funds: u128,
     ) -> Result<Self, ContractError> {
@@ -22,7 +22,7 @@ impl MintAttempt {
             NUM_MINTS_ATTEMPTED.update(deps.storage, |n| -> StdResult<_> { Ok(n + 1) })?;
         let mint_attempt = Self {
             id: mint_attempt_id,
-            minter: deps.api.addr_validate(&minter)?,
+            minter: minter.clone(),
             quantity,
             funds,
         };
