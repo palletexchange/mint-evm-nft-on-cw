@@ -6,7 +6,7 @@ use crate::state::{
 use crate::SUPPORTED_DENOM;
 use cosmwasm_std::{
     coin, entry_point, to_json_binary, wasm_execute, BankMsg, Binary, CosmosMsg, Deps, DepsMut,
-    Empty, Env, MessageInfo, Response,
+    Env, MessageInfo, Response,
 };
 use cw721::Cw721ExecuteMsg;
 use cw_ownable::{assert_owner, get_ownership, initialize_owner};
@@ -115,6 +115,7 @@ pub fn execute_mint(
     } else {
         return Err(ContractError::InvalidFundsReceived {});
     };
+
     let send_msg: Option<CosmosMsg> = if mint_fund_amount > 0 {
         Some(
             BankMsg::Send {
@@ -139,10 +140,12 @@ pub fn execute_mint(
     )?
     .into();
 
-    let mut msgs = vec![mint_approval_msg];
-    if let Some(send_msg) = send_msg {
-        msgs.push(send_msg);
-    }
+    let mut msgs = if let Some(send_msg) = send_msg {
+        vec![send_msg]
+    } else {
+        vec![]
+    };
+    msgs.push(mint_approval_msg);
 
     Ok(Response::new().add_messages(msgs).add_attributes(vec![
         ("action", "mint"),
